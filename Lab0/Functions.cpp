@@ -9,10 +9,68 @@
 #include <deque>
 #define stop __asm nop
 
-Functions::Functions() : m_probabilities(AlphabetSize, 0), m_codeLength(), m_symbolCode(),
-	m_probabilitiesReserved(), MyAlphabet(Alphabet, Alphabet + AlphabetSize)
+Functions::Functions() : m_probabilities(), m_symbolCode(), m_probabilitiesReserved(), m_myAlphabet(), m_dictionary()
 {
-	Count = 0;
+	m_symbolCounter = 0;
+}
+
+void Functions::Start()
+{
+	CreateRandomText();
+	CreateDictionary("RandomText.txt");
+	CreateAlphabet();
+	Huffman(m_myAlphabet.size());
+	CodeHuffman("RandomText.txt", "HuffmanCode.txt");
+	DecodeHuffman("HuffmanCode.txt", "HuffmanDecoded.txt");
+}
+
+void Functions::CreateDictionary(std::string fileName)
+{
+	m_dictionary.clear();
+	std::ifstream fin(fileName, std::ios_base::binary);
+	char currentSymbol;
+	while (!fin.eof())
+	{
+		fin.get(currentSymbol);
+		m_dictionary[currentSymbol]++;
+		m_symbolCounter++;
+	}
+	fin.close();
+}
+
+void Functions::CreateAlphabet()
+{
+	if (!m_dictionary.empty())
+	{
+		m_myAlphabet.clear();
+		m_probabilities.clear();
+		m_probabilitiesReserved.clear();
+
+		for (auto i = m_dictionary.begin(); i != m_dictionary.end(); i++)
+		{
+			m_myAlphabet.push_back(i->first);
+			m_probabilities.push_back((i->second) / m_symbolCounter);
+		}
+
+		for (int i = 0; i < m_myAlphabet.size() - 1; i++) {
+			for (int j = 0; j < m_myAlphabet.size() - i - 1; j++) {
+				if (m_probabilities[j] < m_probabilities[j + 1]) {
+					double temp = m_probabilities[j];
+					m_probabilities[j] = m_probabilities[j + 1];
+					m_probabilities[j + 1] = temp;
+					char tmp = m_myAlphabet[j];
+					m_myAlphabet[j] = m_myAlphabet[j + 1];
+					m_myAlphabet[j + 1] = tmp;
+				}
+			}
+		}
+
+		m_probabilitiesReserved = m_probabilities;
+		//double sum = 0;
+		//for (int i = 0; i < m_probabilities.size(); i++) sum += m_probabilities[i];
+		//std::cout << sum;
+	}
+	else std::cout << "Fill the m_dictionary";
 }
 
 void Functions::CreateRandomText()
@@ -22,29 +80,9 @@ void Functions::CreateRandomText()
 	for (int i = 0; i < Length; i++)
 	{
 		int randomNumber = mersenne() % AlphabetSize;
-		m_probabilities[randomNumber]++;
-		fout << MyAlphabet[randomNumber];
+		fout << Alphabet[randomNumber];
 	}
 	fout.close();
-	for (int i = 0; i < AlphabetSize; i++) m_probabilities[i] /= Length;
-
-	for (int i = 0; i < AlphabetSize - 1; i++) {
-		for (int j = 0; j < AlphabetSize - i - 1; j++) {
-			if (m_probabilities[j] > m_probabilities[j + 1]) {
-				double temp = m_probabilities[j];
-				m_probabilities[j] = m_probabilities[j + 1];
-				m_probabilities[j + 1] = temp;
-				char tmp = MyAlphabet[j];
-				MyAlphabet[j] = MyAlphabet[j + 1];
-				MyAlphabet[j + 1] = tmp;
-			}
-		}
-	}
-	
-	m_probabilitiesReserved = m_probabilities;
-
-
-	//for (int i = 0; i < AlphabetSize; i++) std::cout << m_probabilities[i] << ' ';
 }
 
 int Functions::Up(int sizeOfProcessedPart, double sumToInsert)
@@ -70,7 +108,6 @@ void Functions::Down(int sizeOfProcessedPart, int numberOfDividingLetter)
 	for (int i = numberOfDividingLetter; i < sizeOfProcessedPart - 2; i++)
 	{
 		m_symbolCode[i] = m_symbolCode[i + 1];
-		m_codeLength[i] = m_codeLength[i + 1];
 	}
 
 	tempCode.push_back(0);
@@ -78,8 +115,6 @@ void Functions::Down(int sizeOfProcessedPart, int numberOfDividingLetter)
 	tempCode.pop_back();
 	tempCode.push_back(1);
 	m_symbolCode.push_back(tempCode);
-	m_codeLength[sizeOfProcessedPart - 2] = tempCode.size();
-	m_codeLength.push_back(tempCode.size());
 }
 
 void Functions::Huffman(int alphabetSize)
@@ -88,8 +123,6 @@ void Functions::Huffman(int alphabetSize)
 	{
 		m_symbolCode.push_back(std::vector<bool>(1, 0));
 		m_symbolCode.push_back(std::vector<bool>(1, 1));
-		m_codeLength.push_back(1);
-		m_codeLength.push_back(1);
 	}
 	else
 	{
@@ -104,45 +137,34 @@ void Functions::WriteCodes()
 {
 	for (int i = 0; i < m_symbolCode.size(); i++)
 	{
-		for (int j = 0; j < m_codeLength[i]; j++) std::cout << m_symbolCode[i][j];
+		for (int j = 0; j < m_symbolCode[i].size(); j++) std::cout << m_symbolCode[i][j];
 		std::cout << '\n';
 	}
 }
 
-void Functions::InsertProbabilities(int alphabetSize)
+void Functions::CodeHuffman(std::string inputName, std::string outputName)
 {
-	double temp = 0;
-	for (int i = 0; i < alphabetSize; i++)
-	{
-		std::cin >> m_probabilities[i];
-	}
-	for (int i = 0; i < AlphabetSize - alphabetSize; i++) m_probabilities.pop_back();
-}
-
-void Functions::CodeHuffman()
-{
-	std::ifstream fin("RandomText.txt", std::ios_base::binary);
-	std::ofstream fout("Huffman.txt", std::ios_base::binary);
+	std::ifstream fin(inputName, std::ios_base::binary);
+	std::ofstream fout(outputName, std::ios_base::binary);
 	if (fin.is_open())
 	{
 		char currentSymbol = 0;
 		char finalSymbol = 0;
 		int counter = 0;
-		for (int i = 0; i < Length; i++)
+		for (int i = 0; i < m_symbolCounter; i++)
 		{
 			fin.get(currentSymbol);
-			for (int j = 0; j < AlphabetSize; j++)
+			for (int j = 0; j < m_myAlphabet.size(); j++)
 			{
-				if (MyAlphabet[j] == currentSymbol)
+				if (m_myAlphabet[j] == currentSymbol)
 				{
-					for (int k = 0; k < m_codeLength[j]; k++)
+					for (int k = 0; k < m_symbolCode[j].size(); k++)
 					{
 						finalSymbol |= (1 << counter) * m_symbolCode[j][k];
 						counter++;
 						if (counter == 8)
 						{
 							fout.put(finalSymbol);
-							Count++;
 							finalSymbol = 0;
 							counter = 0;
 						}
@@ -153,17 +175,16 @@ void Functions::CodeHuffman()
 		if (counter != 0)
 		{
 			fout.put(finalSymbol);
-			Count++;
 		}
 	}
 	fin.close();
 	fout.close();
 }
 
-void Functions::DecodeHuffman()
+void Functions::DecodeHuffman(std::string inputName, std::string outputName)
 {
-	std::ifstream fin("Huffman.txt", std::ios_base::binary);
-	std::ofstream fout("DecodedHuffman.txt", std::ios_base::binary);
+	std::ifstream fin(inputName, std::ios_base::binary);
+	std::ofstream fout(outputName, std::ios_base::binary);
 	if (fin.is_open())
 	{
 		int counter = 0;
@@ -182,8 +203,7 @@ void Functions::DecodeHuffman()
 			while (startOfEmptyPart >= 8)
 			{
 				numberOfFinalSymbol = FindCode(buffer, startOfEmptyPart);
-				std::cout << MyAlphabet[numberOfFinalSymbol];
-				fout << MyAlphabet[numberOfFinalSymbol];
+				fout.put(m_myAlphabet[numberOfFinalSymbol]);
 				counter++;
 				if (counter == 10000)
 				{
@@ -196,28 +216,12 @@ void Functions::DecodeHuffman()
 	}
 }
 
-void Functions::GetFile()
-{
-	std::ifstream fin("Huffman.txt", std::ios_base::binary);
-	std::ofstream fout("Stunt.txt", std::ios_base::binary);
-	std::deque<char> buffer;
-	char currentSymbol;
-	int counter = 0;
-	while (fin.get(currentSymbol))
-	{
-		fout.put(currentSymbol);
-	}
-	fin.close();
-	fout.close();
-	stop
-}
-
 int Functions::FindCode(std::deque<bool>& buffer, int& startOfEmptyPart)
 {
-	for (int i = 0; i < AlphabetSize; i++)
+	for (int i = 0; i < m_myAlphabet.size(); i++)
 	{
 		bool isSame = true;
-		for (int j = 0; j < m_codeLength[i]; j++)
+		for (int j = 0; j < m_symbolCode[i].size(); j++)
 		{
 			if (m_symbolCode[i][j] != buffer[j])
 			{
@@ -227,13 +231,12 @@ int Functions::FindCode(std::deque<bool>& buffer, int& startOfEmptyPart)
 		}
 		if (isSame == true)
 		{
-			for (int j = 0; j < (startOfEmptyPart - m_codeLength[i]); j++)
+			for (int j = 0; j < (startOfEmptyPart - m_symbolCode[i].size()); j++)
 			{
-				buffer[j] = buffer[j + m_codeLength[i]];
+				buffer[j] = buffer[j + m_symbolCode[i].size()];
 			}
-			startOfEmptyPart -= m_codeLength[i];
+			startOfEmptyPart -= m_symbolCode[i].size();
 			return i;
 		}
 	}
-	
 }

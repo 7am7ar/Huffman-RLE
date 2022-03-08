@@ -1,26 +1,28 @@
 #pragma once
 #include <vector>
 #include <deque>
-
+#include <map>
+#include <string>
 class Functions
 {
 public:
 	Functions();
+	void CreateDictionary(std::string fileName);
+	void CreateAlphabet();
 	void CreateRandomText();
 	void Huffman(int alphabetSize);
 	int Up(int sizeOfProcessedPart, double sumToInsert);
 	void Down(int sizeOfProcessedPart, int numberOfDividedLetter);
-	void CodeHuffman();
-	void DecodeHuffman();
-	void GetFile();
+	void CodeHuffman(std::string inputName, std::string outputName);
+	void DecodeHuffman(std::string inputName, std::string outputName);
 	void WriteCodes();
 	int FindCode(std::deque<bool>& buffer, int& startOfEmptyPart);
-	void InsertProbabilities(int alphabetSize);
+	void Start();
 private:
-	int Count;
-	std::vector<char> MyAlphabet;
+	int m_symbolCounter;
+	std::map<char, double> m_dictionary;
+	std::vector<char> m_myAlphabet;
 	std::vector<double> m_probabilities;
 	std::vector<double> m_probabilitiesReserved;
 	std::vector<std::vector<bool>> m_symbolCode;
-	std::vector<int> m_codeLength;
 };
