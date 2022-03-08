@@ -1,0 +1,4 @@
+﻿  Functions.cpp
+c:\study\projects\fourthsemlabs\lab0\lab0\lab0\functions.cpp(105): warning C4018: '<': signed/unsigned mismatch
+c:\study\projects\fourthsemlabs\lab0\lab0\lab0\functions.cpp(239): warning C4715: 'Functions::FindCode': not all control paths return a value
+  Lab0.vcxproj -> C:\Study\Projects\FourthSemLabs\Lab0\Lab0\Debug\Lab0.exe
