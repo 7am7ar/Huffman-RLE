@@ -1,6 +1,6 @@
 ﻿  Functions.cpp
-c:\study\projects\fourthsemlabs\lab0\lab0\lab0\functions.cpp(55): warning C4018: '<': signed/unsigned mismatch
-c:\study\projects\fourthsemlabs\lab0\lab0\lab0\functions.cpp(56): warning C4018: '<': signed/unsigned mismatch
+c:\study\projects\fourthsemlabs\lab0\lab0\lab0\functions.cpp(59): warning C4018: '<': signed/unsigned mismatch
+c:\study\projects\fourthsemlabs\lab0\lab0\lab0\functions.cpp(60): warning C4018: '<': signed/unsigned mismatch
 c:\study\projects\fourthsemlabs\lab0\lab0\lab0\functions.cpp(138): warning C4018: '<': signed/unsigned mismatch
 c:\study\projects\fourthsemlabs\lab0\lab0\lab0\functions.cpp(140): warning C4018: '<': signed/unsigned mismatch
 c:\study\projects\fourthsemlabs\lab0\lab0\lab0\functions.cpp(157): warning C4018: '<': signed/unsigned mismatch
@@ -8,5 +8,7 @@ c:\study\projects\fourthsemlabs\lab0\lab0\lab0\functions.cpp(161): warning C4018
 c:\study\projects\fourthsemlabs\lab0\lab0\lab0\functions.cpp(221): warning C4018: '<': signed/unsigned mismatch
 c:\study\projects\fourthsemlabs\lab0\lab0\lab0\functions.cpp(224): warning C4018: '<': signed/unsigned mismatch
 c:\study\projects\fourthsemlabs\lab0\lab0\lab0\functions.cpp(234): warning C4018: '<': signed/unsigned mismatch
+c:\study\projects\fourthsemlabs\lab0\lab0\lab0\functions.cpp(249): warning C4018: '<': signed/unsigned mismatch
+c:\study\projects\fourthsemlabs\lab0\lab0\lab0\functions.cpp(402): warning C4244: 'return': conversion from 'std::streamoff' to 'double', possible loss of data
 c:\study\projects\fourthsemlabs\lab0\lab0\lab0\functions.cpp(242): warning C4715: 'Functions::FindCode': not all control paths return a value
   Lab0.vcxproj -> C:\Study\Projects\FourthSemLabs\Lab0\Lab0\Debug\Lab0.exe

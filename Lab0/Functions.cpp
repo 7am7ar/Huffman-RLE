@@ -22,11 +22,15 @@ void Functions::Start()
 	Huffman(m_myAlphabet.size());
 	CodeHuffman("RandomText.txt", "HuffmanCode.txt");
 	DecodeHuffman("HuffmanCode.txt", "HuffmanDecoded.txt");
+	CodeRLE("RandomText.txt", "RLE.txt");
+	DecodeRLE("RLE.txt", "RLEDecoded.txt");
+	GetAdditionalInformation("RandomText.txt", "HuffmanCode.txt", "HuffmanDecoded.txt", "RandomText.txt", "RLE.txt", "RLEDecoded.txt");
 }
 
 void Functions::CreateDictionary(std::string fileName)
 {
 	m_dictionary.clear();
+	m_symbolCounter = 0;
 	std::ifstream fin(fileName, std::ios_base::binary);
 	char currentSymbol;
 	while (!fin.eof())
@@ -45,13 +49,13 @@ void Functions::CreateAlphabet()
 		m_myAlphabet.clear();
 		m_probabilities.clear();
 		m_probabilitiesReserved.clear();
+		m_symbolCode.clear();
 
 		for (auto i = m_dictionary.begin(); i != m_dictionary.end(); i++)
 		{
 			m_myAlphabet.push_back(i->first);
 			m_probabilities.push_back((i->second) / m_symbolCounter);
 		}
-
 		for (int i = 0; i < m_myAlphabet.size() - 1; i++) {
 			for (int j = 0; j < m_myAlphabet.size() - i - 1; j++) {
 				if (m_probabilities[j] < m_probabilities[j + 1]) {
@@ -64,11 +68,7 @@ void Functions::CreateAlphabet()
 				}
 			}
 		}
-
 		m_probabilitiesReserved = m_probabilities;
-		//double sum = 0;
-		//for (int i = 0; i < m_probabilities.size(); i++) sum += m_probabilities[i];
-		//std::cout << sum;
 	}
 	else std::cout << "Fill the m_dictionary";
 }
@@ -239,4 +239,165 @@ int Functions::FindCode(std::deque<bool>& buffer, int& startOfEmptyPart)
 			return i;
 		}
 	}
+}
+
+void Functions::GetAdditionalInformation(std::string origHuf, std::string compHuf, std::string decHuf,
+	std::string origRLE, std::string compRLE, std::string decRLE)
+{
+	std::cout << "Алгоритм Хаффмана:";
+	double codingCost = 0;
+	for (int i = 0; i < m_probabilitiesReserved.size(); i++)
+	{
+		codingCost += m_probabilitiesReserved[i] * m_symbolCode[i].size();
+	}
+
+	std::cout << "\nЦена кодирования: " << codingCost;
+
+	double originalSize = GetFileSize(origHuf);
+	double comressedSize = GetFileSize(compHuf);
+	std::cout << "\nКоэффицент сжатия: " << (comressedSize / originalSize);
+
+	if (CheckDecoding(origHuf, decHuf)) std::cout << "\nДекодирование произошло верно";
+	else std::cout << "\nДекодирование произошло неверно";
+
+	std::cout << "\n\nАлгоритм RLE:";
+
+	originalSize = GetFileSize(origRLE);
+	comressedSize = GetFileSize(compRLE);
+	std::cout << "\nКоэффицент сжатия: " << (comressedSize / originalSize);
+
+	if (CheckDecoding(origRLE, decRLE)) std::cout << "\nДекодирование произошло верно";
+	else std::cout << "\nДекодирование произошло неверно";
+
+	double compValHR = HuffmanRLE();
+	double compValRH = RLEHuffman();
+
+	std::cout << "\n\nДвухступенчатое кодирование:";
+	std::cout << "\nКоэффицент сжатия Хаффман + RLE: " << compValHR;
+	std::cout << "\nКоэффицент сжатия RLE + Хаффман: " << compValRH;
+	if (compValHR > compValRH) std::cout << "\nХаффман + RLE эффективней";
+	if (compValHR < compValRH) std::cout << "\nRLE + Хаффман эффективней";
+	if ((compValHR - compValRH) < DBL_EPSILON) std::cout << "\nОба варианта одинаково эффективны.";
+	std::cout << '\n';
+}
+
+bool Functions::CheckDecoding(std::string firstName, std::string secondName)
+{
+	std::ifstream firstFin(firstName, std::ios_base::binary);
+	std::ifstream secondFin(secondName, std::ios_base::binary);
+	char firstSymbol = 0;
+	char secondSymbol = 0;
+	while (!firstFin.eof() && !secondFin.eof())
+	{
+		firstFin.get(firstSymbol);
+		secondFin.get(secondSymbol);
+		if (firstSymbol != secondSymbol) return false;
+	}
+	if (firstFin.eof() && secondFin.eof()) return true;
+	else return false;
+}
+
+void Functions::CodeRLE(std::string inputName, std::string outputName)
+{
+	std::ifstream fin(inputName, std::ios_base::binary);
+	std::ofstream fout(outputName, std::ios_base::binary);
+	int counter = 1;
+	char currentSymbol = 0;
+	char previousSymbol = 0;
+
+	if (!fin.eof()) fin.get(previousSymbol);
+
+	while (!fin.eof())
+	{
+		fin.get(currentSymbol);
+		if (currentSymbol == previousSymbol)
+		{
+			counter++;
+		}
+		else
+		{
+			for (int i = 0; i < 4; i++)
+			{
+				fout.put(counter >> (8 * i));
+			}
+			fout.put(previousSymbol);
+			counter = 1;
+		}
+		previousSymbol = currentSymbol;
+	}
+
+	counter--;
+	for (int i = 0; i < 4; i++)
+	{
+		fout.put(counter >> (8 * i));
+	}
+	fout.put(previousSymbol);
+
+	fin.close();
+	fout.close();
+}
+
+void Functions::DecodeRLE(std::string inputName, std::string outputName)
+{
+	std::ifstream fin(inputName, std::ios_base::binary);
+	std::ofstream fout(outputName, std::ios_base::binary);
+	char currentSymbol = 0;
+	char numberChar = 0;
+	int currentNumber = 0;
+	int count = 0;
+	while (!fin.eof())
+	{
+		if (count == 9998)
+		{
+			stop
+		}
+		for (int i = 0; i < 4; i++)
+		{
+			fin.get(numberChar);
+			currentNumber |= numberChar << (8 * i);
+		}
+		fin.get(currentSymbol);
+		if (fin.eof())
+		{
+			currentNumber--;
+		}
+		for (int i = 0; i < currentNumber; i++)
+		{
+			fout.put(currentSymbol);
+			count++;
+		}
+		currentNumber = 0;
+	}
+
+	fin.close();
+	fout.close();
+}
+
+double Functions::HuffmanRLE()
+{
+	CreateDictionary("RandomText.txt");
+	CreateAlphabet();
+	Huffman(m_myAlphabet.size());
+	CodeHuffman("RandomText.txt", "HuffmanCode.txt");
+	CodeRLE("HuffmanCode.txt", "HuffmanRLE.txt");
+	return GetFileSize("HuffmanRLE.txt") / GetFileSize("RandomText.txt");
+}
+
+double Functions::RLEHuffman()
+{
+	CodeRLE("RandomText.txt", "RLE.txt");
+	CreateDictionary("RLE.txt");
+	CreateAlphabet();
+	Huffman(m_myAlphabet.size());
+	CodeHuffman("RLE.txt", "RLEHuffman.txt");
+	return GetFileSize("RLEHuffman.txt") / GetFileSize("RandomText.txt");
+}
+
+double Functions::GetFileSize(std::string fileName)
+{
+	std::ifstream input(fileName, std::ios_base::binary);
+	const auto begin = input.tellg();
+	input.seekg(0, std::ios_base::end);
+	const auto end = input.tellg();
+	return end - begin;
 }

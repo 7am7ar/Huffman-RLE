@@ -17,7 +17,15 @@ public:
 	void DecodeHuffman(std::string inputName, std::string outputName);
 	void WriteCodes();
 	int FindCode(std::deque<bool>& buffer, int& startOfEmptyPart);
+	void GetAdditionalInformation(std::string origHuf, std::string compHuf, std::string decHuf, 
+		std::string origRLE, std::string compRLE, std::string decRLE);
+	bool CheckDecoding(std::string firstName, std::string secondName);
 	void Start();
+	void CodeRLE(std::string inputName, std::string outputName);
+	void DecodeRLE(std::string inputName, std::string outputName);
+	double HuffmanRLE();
+	double RLEHuffman();
+	double GetFileSize(std::string fileName);
 private:
 	int m_symbolCounter;
 	std::map<char, double> m_dictionary;
